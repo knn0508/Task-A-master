@@ -17,7 +17,17 @@ RUN apt-get update && apt-get install -y \
 
 # Copy backend requirements
 COPY backend/requirements.txt ./
+
+# Install dependencies
+# Use --extra-index-url to prefer CPU versions of PyTorch if available
+RUN pip install --no-cache-dir torch==2.8.0 --extra-index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Remove build dependencies to save space
+RUN apt-get remove -y build-essential && \
+    apt-get autoremove -y && \
+    apt-get clean
+    
 RUN pip install gunicorn
 
 # Copy backend code
