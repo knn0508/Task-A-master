@@ -1447,33 +1447,10 @@ Linkə klikləyərək şablonu kompüterinizə yükləyə bilərsiniz."""
             ]
         })
     
-    @app.route('/')
-    def index():
-        return jsonify({
-            'message': 'Enhanced RAG Backend Server with Context Awareness',
-            'status': 'running',
-            'version': '2.0',
-            'features': [
-                'Context-aware conversations',
-                'Improved document matching',
-                'Structured answer formatting',
-                'Conversation memory',
-                'Enhanced contact queries',
-                'Keyword extraction and search',
-                'Document reprocessing'
-            ],
-            'frontend_url': 'http://localhost:3000',
-            'api_endpoints': {
-                'health': '/api/health',
-                'auth_check': '/api/auth/check',
-                'documents': '/api/documents',
-                'document_types': '/api/documents/types',
-                'chat': '/api/chat/ask',
-                'reprocess': '/api/documents/{id}/reprocess',
-                'bulk_reprocess': '/api/admin/documents/bulk-reprocess',
-                'keywords': '/api/documents/{id}/keywords'
-            }
-        })
+    # Route removed to allow serving React Frontend
+    # @app.route('/')
+    # def index():
+    #     return jsonify({ ... })
     
     @app.route('/api')
     def api_root():
