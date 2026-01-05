@@ -1514,5 +1514,10 @@ if __name__ == '__main__':
     print("🔑 Keyword Extraction: ENABLED")
     print("♻️ Document Reprocessing: ENABLED")
     print("=" * 60)
-    
-    app.run(host='0.0.0.0', port=5000, debug=True)
+
+    app.run(
+        host='0.0.0.0',
+        port=5000,
+        debug=True,
+        use_reloader=False
+    )

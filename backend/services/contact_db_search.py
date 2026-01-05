@@ -92,7 +92,7 @@ def enhance_rag_with_contact_search(rag_service_instance):
         lower_q = question.lower()
         # detect contact query - expanded keywords
         contact_keywords = [
-            'telefon', 'nömrə', 'mobil', 'daxili', 'şəhər', 'əlaqə', 'kim', 'kimin',
+            'telefon', 'nömrə', 'mobil', 'daxili', 'şəhər', 'əlaqə', 'kimin',
             'işçi', 'əməkdaş', 'siyahı', 'list', 'hamı', 'bütün', 'vəzifə', 'müdir',
             'mütəxəssis', 'məsləhətçi', 'rəis', 'baş', 'çıxart', 'göstər', 'tap'
         ]

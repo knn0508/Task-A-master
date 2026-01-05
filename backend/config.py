@@ -44,13 +44,14 @@ class Config:
     
     # AI Configuration
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-    EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', 'models/embedding-001')
+    # EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', 'models/embedding-001')
     LLM_MODEL = os.getenv('LLM_MODEL', 'gemini-1.5-flash')
+    EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', 'sentence-transformers/all-MiniLM-L6-v2')
     
     # Vector Database
     VECTOR_DB_PATH = os.getenv('VECTOR_DB_PATH', 'chroma_db')
-    CHUNK_SIZE = int(os.getenv('CHUNK_SIZE', 450))
-    CHUNK_OVERLAP = int(os.getenv('CHUNK_OVERLAP', 150))
+    CHUNK_SIZE = int(os.getenv('CHUNK_SIZE', 1000))
+    CHUNK_OVERLAP = int(os.getenv('CHUNK_OVERLAP', 200))
     SEARCH_RESULTS_COUNT = int(os.getenv('SEARCH_RESULTS_COUNT', 5))
     
     # CORS

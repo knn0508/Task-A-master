@@ -2,7 +2,7 @@
 """Main Flask application"""
 import os
 from datetime import datetime
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
@@ -155,6 +155,15 @@ def create_app(config_name=None):
     @app.errorhandler(500)
     def internal_error(error):
         return jsonify({'error': 'Server xətası'}), 500
+
+    # Serve React Frontend
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve(path):
+        if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+            return send_from_directory(app.static_folder, path)
+        else:
+            return send_from_directory(app.static_folder, 'index.html')
     
     return app
 

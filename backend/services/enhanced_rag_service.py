@@ -13,6 +13,9 @@ from langchain_community.vectorstores import Chroma
 from services.file_processor import FileProcessor
 from services.intelligent_keyword_extractor import IntelligentKeywordExtractor
 from services.improved_document_matching import ImprovedDocumentMatcher
+from sentence_transformers import SentenceTransformer
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
 
 class EnhancedRAGServiceV2:
     """Enhanced RAG system with improved document matching"""
@@ -29,9 +32,8 @@ class EnhancedRAGServiceV2:
         self.model = genai.GenerativeModel(config.LLM_MODEL)
         
         # Initialize embeddings
-        self.embeddings = GoogleGenerativeAIEmbeddings(
-            model=config.EMBEDDING_MODEL,
-            google_api_key=config.GEMINI_API_KEY
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name=config.EMBEDDING_MODEL
         )
         
         # Initialize file processor and keyword extractor
@@ -42,7 +44,7 @@ class EnhancedRAGServiceV2:
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=config.CHUNK_SIZE,
             chunk_overlap=config.CHUNK_OVERLAP,
-            separators=["\n\n", "\n", "\t", "  ", " ", "|"]
+            separators=["\n\n", "\n", ".", "?", "!"]
         )
 
         self.vector_store = Chroma(
@@ -129,11 +131,10 @@ class EnhancedRAGServiceV2:
             
             # Create new vector store with enhanced chunks
             enhanced_chunks = self._enhance_chunks_with_context(chunks, keywords, doc_name)
-            
+
             vector_store = Chroma.from_texts(
                 texts=enhanced_chunks,
-                embedding=self.embeddings,
-                metadatas=metadatas,
+                embedding=self.embeddings,  # ВАЖНО: embedding, НЕ embedding_function
                 persist_directory=vector_db_path
             )
             

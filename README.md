@@ -18,6 +18,7 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+
 3. **Backend-i başladın:**
 ```bash
 python simple_app.py
