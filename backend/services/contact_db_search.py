@@ -23,7 +23,15 @@ def enhance_rag_with_contact_search(rag_service_instance):
 
     def _extract_name(question: str) -> str:
         # Exclude general search keywords and job titles from name extraction
-        general_keywords = ['Hamı', 'Bütün', 'Kim', 'Siyahı', 'Telefon', 'Nömrə', 'Məlumat', 'Nazir', 'Müdir']
+        general_keywords = [
+            'Hamı', 'Bütün', 'Kim', 'Siyahı', 'Telefon', 'Nömrə', 'Məlumat', 
+            'Nazir', 'Müdir', 'Rəis', 'Sədr', 'Direktor',
+            'Şöbə', 'İdarə', 'Sektor', 'Bölmə', 'Departament', 'Xidmət',
+            'Mütəxəssis', 'Məsləhətçi', 'Ekspert', 'Mühasib', 'Mühəndis',
+            'Auditor', 'Müfəttiş', 'Köməkçi', 'Müşavir', 'Hüquqşünas',
+            'Koordinator', 'Menecer', 'Katib', 'Qeydiyyatçı', 'Referent',
+            'Operator', 'Müəllim', 'Anbardar', 'Rəhbər'
+        ]
         
         # Full name pattern: First Last
         match = re.search(r"\b[A-ZƏÇĞÖÜŞİ][a-zəçöüşğı]+\s+[A-ZƏÇĞÖÜŞİ][a-zəçöüşğı]+\b", question)
@@ -106,7 +114,13 @@ def enhance_rag_with_contact_search(rag_service_instance):
             name = _extract_name(question)
             
             # Check if this is a job title search without specific name
-            job_keywords = ['müdir', 'rəis', 'nazir', 'müavin', 'mütəxəssis', 'məsləhətçi', 'baş']
+            job_keywords = [
+                'müdir', 'rəis', 'nazir', 'müavin', 'mütəxəssis', 'məsləhətçi', 'baş',
+                'direktor', 'sədr', 'koordinator', 'inspektor', 'ekspert',
+                'anbardar', 'rəhbər', 'mühasib', 'mühəndis', 'auditor', 'müfəttiş',
+                'köməkçi', 'müşavir', 'hüquqşünas', 'kob dostu', 'kargüzar',
+                'menecer', 'katib', 'qeydiyyatçı', 'referent', 'texniki', 'operator', 'müəllim'
+            ]
             job_search = any(keyword in lower_q for keyword in job_keywords)
             general_search = any(word in lower_q for word in ['hamı', 'bütün', 'kim var', 'siyahı', 'telefon nömrələri'])
             
