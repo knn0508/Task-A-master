@@ -159,6 +159,7 @@ dist-ssr/
 *.db
 *.sqlite
 *.sqlite3
+!backend/contacts.db
 
 # Flask session files
 flask_session/
