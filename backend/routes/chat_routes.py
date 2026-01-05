@@ -4,7 +4,6 @@ import json
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from services.rag_service import RAGService
 
 chat_bp = Blueprint('chat', __name__, url_prefix='/api/chat')
 
