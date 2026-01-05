@@ -20,8 +20,7 @@ COPY backend/requirements.txt ./
 
 # Install dependencies
 # Use --extra-index-url to prefer CPU versions of PyTorch if available
-RUN pip install --no-cache-dir torch==2.8.0 --extra-index-url https://download.pytorch.org/whl/cpu
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
 # Remove build dependencies to save space
 RUN apt-get remove -y build-essential && \
@@ -31,19 +30,23 @@ RUN apt-get remove -y build-essential && \
 RUN pip install gunicorn
 
 # Copy backend code
-COPY backend/ ./backend
+COPY backend/ /app/backend
 
 # Copy built frontend assets to backend/static
-COPY --from=frontend-build /app/frontend/dist ./backend/static
+COPY --from=frontend-build /app/frontend/dist /app/backend/static
 
 # Set environment variables
-ENV FLASK_APP=backend/app.py
+ENV FLASK_APP=simple_app.py
 ENV FLASK_ENV=production
 ENV PORT=5000
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/backend
 
 # Expose port
 EXPOSE 5000
 
+# Set working directory to backend
+WORKDIR /app/backend
+
 # Run the application
-CMD ["gunicorn", "--chdir", "backend", "app:app", "-b", "0.0.0.0:5000", "--timeout", "120"]
+CMD ["gunicorn", "simple_app:app", "-b", "0.0.0.0:5000", "--timeout", "120"]

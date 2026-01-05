@@ -4,7 +4,7 @@ from services.hr_questions_handler import HRQuestionsHandler, integrate_hr_handl
 import os
 import json
 from datetime import timedelta, datetime, timezone
-from flask import Flask, jsonify, session, send_file, request, Response
+from flask import Flask, jsonify, session, send_file, request, Response, send_from_directory
 from flask_cors import CORS
 from flask_session import Session
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -1500,9 +1500,19 @@ Linkə klikləyərək şablonu kompüterinizə yükləyə bilərsiniz."""
     
     return app, db_manager, rag_service, chat_service
 
+# Create the application instance for Gunicorn
+app, db_manager, rag_service, chat_service = create_simple_app()
+
+# Serve React Frontend
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
+
 if __name__ == '__main__':
-    app, db_manager, rag_service, chat_service = create_simple_app()
-    
     print("🚀 Enhanced RAG Backend Starting...")
     print("=" * 60)
     print("🌐 Server: http://localhost:5000")
