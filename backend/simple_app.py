@@ -30,10 +30,12 @@ def create_simple_app():
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['SESSION_COOKIE_SECURE'] = False
     
-    # Initialize extensions
+        # Initialize extensions
+        cors_origins_env = os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000')
+        cors_origins = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]
     Session(app)
     CORS(app, 
-         origins=['http://localhost:3000', 'http://127.0.0.1:3000'],
+            origins=cors_origins,
          supports_credentials=True,
          allow_headers=['Content-Type', 'Accept'],
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']

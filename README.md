@@ -84,3 +84,27 @@ RAG Chatbot Team
 ## 🆘 Support
 
 Hər hansı problem və ya sual üçün issue açın və ya əlaqə saxlayın.
+
+## ▲ Vercel Deployment
+
+Bu repo `frontend` (Vite) + `backend` (Flask API) üçün Vercel-ə uyğunlaşdırılıb.
+
+### 1) Project import
+- Repo-nu Vercel-ə import edin (root: layihə kökü).
+- `vercel.json` avtomatik olaraq frontend build + Python API route-larını idarə edir.
+
+### 2) Vercel Environment Variables
+Vercel Dashboard → Project Settings → Environment Variables bölməsində əlavə edin:
+
+- `OPENAI_API_KEY`
+- `LLM_MODEL` (məs: `gpt-5.2`)
+- `EMBEDDING_MODEL` (məs: `text-embedding-3-small`)
+- `SECRET_KEY`
+- `CORS_ORIGINS` (məs: `https://your-project.vercel.app`)
+
+### 3) Deploy
+- `main` branch push etdikdə Vercel avtomatik deploy edəcək.
+
+### 4) Vacib qeydlər
+- Vercel Python funksiyaları serverless və ephemeral-dir; lokal fayl sistemi (`documents`, `chroma_db`, sqlite) qalıcı deyil.
+- Production üçün qalıcı storage/database (məs: Postgres + object storage) tövsiyə olunur.
