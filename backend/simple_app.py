@@ -1501,6 +1501,25 @@ def serve(path):
     else:
         return send_from_directory(app.static_folder, 'index.html')
 
+
+# Health check endpoint for deployments
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    try:
+        from config import get_config
+        cfg = get_config()
+        data = {
+            'status': 'ok',
+            'llm_model': getattr(cfg, 'LLM_MODEL', None),
+            'embedding_model': getattr(cfg, 'EMBEDDING_MODEL', None),
+            'cors_origins': getattr(cfg, 'CORS_ORIGINS', None),
+            'database_file': cfg.DATABASE_FILE,
+            'database_exists': os.path.exists(cfg.DATABASE_FILE)
+        }
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
 if __name__ == '__main__':
     print("🚀 Enhanced RAG Backend Starting...")
     print("=" * 60)
