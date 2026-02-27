@@ -2,19 +2,66 @@
 """Enhanced RAG service with improved document matching"""
 import os
 import time
-import google.api_core.exceptions
 import json
 import re
 from typing import Optional, List, Dict
-import google.generativeai as genai
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from openai import OpenAI, RateLimitError
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from services.file_processor import FileProcessor
 from services.intelligent_keyword_extractor import IntelligentKeywordExtractor
 from services.improved_document_matching import ImprovedDocumentMatcher
-from sentence_transformers import SentenceTransformer
 from langchain_community.embeddings import HuggingFaceEmbeddings
+
+
+class _OpenAIResponseCompat:
+    def __init__(self, text: str):
+        self.text = text
+
+
+class _OpenAIModelCompat:
+    def __init__(self, client: OpenAI, model_name: str):
+        self.client = client
+        self.model_name = model_name
+
+    def generate_content(self, prompt: str) -> _OpenAIResponseCompat:
+        response = self.client.responses.create(
+            model=self.model_name,
+            input=prompt
+        )
+
+        text = getattr(response, 'output_text', None)
+        if text:
+            return _OpenAIResponseCompat(text)
+
+        output_chunks = []
+        for item in getattr(response, 'output', []) or []:
+            for content_item in getattr(item, 'content', []) or []:
+                chunk = getattr(content_item, 'text', None)
+                if chunk:
+                    output_chunks.append(chunk)
+
+        return _OpenAIResponseCompat("\n".join(output_chunks).strip())
+
+
+class _OpenAIEmbeddingsCompat:
+    def __init__(self, client: OpenAI, model_name: str):
+        self.client = client
+        self.model_name = model_name
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        if not texts:
+            return []
+
+        response = self.client.embeddings.create(
+            model=self.model_name,
+            input=texts
+        )
+        return [item.embedding for item in response.data]
+
+    def embed_query(self, text: str) -> List[float]:
+        vectors = self.embed_documents([text])
+        return vectors[0] if vectors else []
 
 
 class EnhancedRAGServiceV2:
@@ -27,14 +74,18 @@ class EnhancedRAGServiceV2:
         # Initialize improved document matcher
         self.document_matcher = ImprovedDocumentMatcher(db_manager)
         
-        # Configure Gemini
-        genai.configure(api_key=config.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel(config.LLM_MODEL)
+        # Configure OpenAI
+        self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
+        self.model = _OpenAIModelCompat(self.openai_client, config.LLM_MODEL)
         
         # Initialize embeddings
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=config.EMBEDDING_MODEL
-        )
+        embedding_model = (config.EMBEDDING_MODEL or "").strip()
+        if embedding_model.startswith("text-embedding-"):
+            self.embeddings = _OpenAIEmbeddingsCompat(self.openai_client, embedding_model)
+        else:
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name=embedding_model or 'sentence-transformers/all-MiniLM-L6-v2'
+            )
         
         # Initialize file processor and keyword extractor
         self.file_processor = FileProcessor()
@@ -487,9 +538,6 @@ class EnhancedRAGServiceV2:
                 'error': str(e)
             }
 
-    import time
-    import google.api_core.exceptions
-
     def _generate_enhanced_answer(self, question: str, context: str, doc_name: str, doc_type: str) -> str:
         """Generate enhanced answer with retry on 429 Too Many Requests"""
 
@@ -549,19 +597,19 @@ class EnhancedRAGServiceV2:
                 answer = response.text
                 answer = self._post_process_answer(answer, question, doc_type)
                 return answer
-            except google.api_core.exceptions.ResourceExhausted as e:
-                print(f"⚠️ Gemini rate limit hit (attempt {attempt + 1}/3). Waiting 25s...")
+            except RateLimitError:
+                print(f"⚠️ OpenAI rate limit hit (attempt {attempt + 1}/3). Waiting 25s...")
                 time.sleep(25)
             except Exception as e:
                 if "429" in str(e):
-                    print(f"⚠️ Gemini 429 Too Many Requests, retrying after 25s... ({attempt + 1}/3)")
+                    print(f"⚠️ OpenAI 429 Too Many Requests, retrying after 25s... ({attempt + 1}/3)")
                     time.sleep(25)
                     continue
                 else:
                     print(f"Answer generation error: {e}")
                     return f"Cavab yaradarkən xəta: {str(e)}"
 
-        return "Gemini API çox yüklənib, zəhmət olmasa bir qədər sonra yenidən cəhd edin."
+        return "OpenAI API çox yüklənib, zəhmət olmasa bir qədər sonra yenidən cəhd edin."
     
     def _post_process_answer(self, answer: str, question: str, doc_type: str) -> str:
         """Post-process answer for better formatting"""

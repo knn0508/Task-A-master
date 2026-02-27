@@ -2,6 +2,7 @@
 """Improved document matching system for better document selection"""
 import re
 import json
+import unicodedata
 from typing import Optional, List, Dict, Tuple
 from collections import Counter
 
@@ -72,20 +73,55 @@ class ImprovedDocumentMatcher:
     
     def _match_by_document_name(self, question: str, documents: List[Dict]) -> Optional[int]:
         """Match by document name mentioned in question"""
-        question_lower = question.lower()
-        
+        question_norm = self._normalize_text(question)
+        question_tokens = set(self._extract_tokens(question_norm))
+
+        best_doc_id = None
+        best_score = 0
+
         for doc in documents:
-            doc_name = doc['original_name'].lower()
-            doc_name_clean = re.sub(r'[_\-\.]', ' ', doc_name).lower()
-            
-            # Check various forms of the document name
-            if (doc_name in question_lower or 
-                doc_name_clean in question_lower or
-                doc_name.replace('.docx', '') in question_lower or
-                doc_name.replace('.pdf', '') in question_lower):
-                return doc['id']
-        
-        return None
+            raw_name = doc.get('original_name', '')
+            base_name = re.sub(r'\.[^.]+$', '', raw_name)
+            doc_norm = self._normalize_text(base_name)
+            doc_tokens = set(self._extract_tokens(doc_norm))
+
+            score = 0
+
+            # Strong signal: whole filename phrase mentioned
+            if doc_norm and doc_norm in question_norm:
+                score += 100
+
+            # Strong signal: token overlap (e.g., "RİİS")
+            shared_tokens = question_tokens.intersection(doc_tokens)
+            for token in shared_tokens:
+                if len(token) >= 3:
+                    score += 25
+
+            # Medium signal: partial token containment
+            for q_token in question_tokens:
+                if len(q_token) < 3:
+                    continue
+                if any(q_token in d_token or d_token in q_token for d_token in doc_tokens if len(d_token) >= 3):
+                    score += 6
+
+            if score > best_score:
+                best_score = score
+                best_doc_id = doc['id']
+
+        return best_doc_id if best_score >= 25 else None
+
+    def _normalize_text(self, text: str) -> str:
+        """Normalize text for robust Azerbaijani/Unicode-insensitive matching."""
+        text = (text or '').casefold()
+        text = unicodedata.normalize('NFKD', text)
+        text = ''.join(ch for ch in text if not unicodedata.combining(ch))
+        text = re.sub(r'[_\-\./]+', ' ', text)
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
+
+    def _extract_tokens(self, text: str) -> List[str]:
+        """Extract alphanumeric tokens for matching."""
+        return re.findall(r'[a-z0-9əçıöüşğ]+', text)
     
     def _match_by_keywords(self, question: str, documents: List[Dict]) -> Optional[int]:
         """Match by extracted keywords"""

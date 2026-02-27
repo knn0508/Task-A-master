@@ -18,8 +18,11 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+3. **AI env dəyişənlərini təyin edin (`backend/.env`):**
+- `OPENAI_API_KEY=...`
+- `LLM_MODEL=gpt-5.2`
 
-3. **Backend-i başladın:**
+4. **Backend-i başladın:**
 ```bash
 python simple_app.py
 ```

@@ -252,6 +252,16 @@ def create_simple_app():
         # Handle explicit document selection
         if document_id:
             documents = db_manager.get_documents()
+
+            # If question clearly mentions a different filename, override stale selected document
+            try:
+                name_matched_doc_id = chat_service.document_matcher._match_by_document_name(question, documents)
+                if name_matched_doc_id and name_matched_doc_id != document_id:
+                    print(f"Overriding selected document {document_id} with filename-matched document {name_matched_doc_id}")
+                    document_id = name_matched_doc_id
+            except Exception as e:
+                print(f"Filename override check skipped: {e}")
+
             doc = next((d for d in documents if d['id'] == document_id), None)
             
             if not doc:

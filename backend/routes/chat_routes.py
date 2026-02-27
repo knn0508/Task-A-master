@@ -1,6 +1,8 @@
 # routes/chat_routes.py
 """Improved chat routes with automatic document detection"""
 import json
+import re
+import unicodedata
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
@@ -32,7 +34,7 @@ def init_chat_routes(db_manager, rag_service, config):
             else:
                 documents = db_manager.get_documents(user_id)
 
-            # If no documents exist → use direct Gemini chat
+            # If no documents exist → use direct LLM chat
             if not documents:
                 answer = rag_service.model.generate_content(question).text
                 return jsonify({
@@ -46,7 +48,7 @@ def init_chat_routes(db_manager, rag_service, config):
                 document_id = find_relevant_document(question, documents, rag_service)
 
                 if not document_id:
-                    # fallback: general chat through Gemini
+                    # fallback: general chat through LLM
                     answer = rag_service.model.generate_content(question).text
 
                     return jsonify({
@@ -132,15 +134,42 @@ def init_chat_routes(db_manager, rag_service, config):
     def find_relevant_document(question, documents, rag_service):
         """Try to find the most relevant document for the question"""
         question_lower = question.lower()
+        question_norm = unicodedata.normalize('NFKD', question.casefold())
+        question_norm = ''.join(ch for ch in question_norm if not unicodedata.combining(ch))
+        question_norm = re.sub(r'[_\-\./]+', ' ', question_norm)
+        question_norm = re.sub(r'\s+', ' ', question_norm).strip()
+        question_tokens = set(re.findall(r'[a-z0-9əçıöüşğ]+', question_norm))
         
         # First, check if document name is mentioned in the question
+        best_doc_id = None
+        best_score = 0
         for doc in documents:
             doc_name_lower = doc['original_name'].lower()
             # Remove extension for matching
             doc_name_without_ext = doc_name_lower.rsplit('.', 1)[0]
-            
+
+            doc_base = re.sub(r'\.[^.]+$', '', doc['original_name'])
+            doc_norm = unicodedata.normalize('NFKD', doc_base.casefold())
+            doc_norm = ''.join(ch for ch in doc_norm if not unicodedata.combining(ch))
+            doc_norm = re.sub(r'[_\-\./]+', ' ', doc_norm)
+            doc_norm = re.sub(r'\s+', ' ', doc_norm).strip()
+            doc_tokens = set(re.findall(r'[a-z0-9əçıöüşğ]+', doc_norm))
+
+            score = 0
             if doc_name_without_ext in question_lower or doc_name_lower in question_lower:
-                return doc['id']
+                score += 30
+            if doc_norm and doc_norm in question_norm:
+                score += 100
+            for token in question_tokens.intersection(doc_tokens):
+                if len(token) >= 3:
+                    score += 25
+
+            if score > best_score:
+                best_score = score
+                best_doc_id = doc['id']
+
+        if best_doc_id and best_score >= 25:
+            return best_doc_id
         
         # If only one document exists, use it
         if len(documents) == 1:

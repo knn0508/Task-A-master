@@ -43,9 +43,8 @@ class Config:
     )
     
     # AI Configuration
-    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-    # EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', 'models/embedding-001')
-    LLM_MODEL = os.getenv('LLM_MODEL', 'gemini-1.5-flash')
+    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+    LLM_MODEL = os.getenv('LLM_MODEL', 'gpt-5.2')
     EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', 'sentence-transformers/all-MiniLM-L6-v2')
     
     # Vector Database

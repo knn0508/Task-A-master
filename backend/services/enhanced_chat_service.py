@@ -2,9 +2,9 @@
 """Enhanced chat service with improved document detection and matching"""
 import json
 import re
+import unicodedata
 from datetime import datetime, timezone
 from typing import List, Dict, Optional, Tuple
-import google.generativeai as genai
 
 # Import the improved document matching system
 from services.improved_document_matching import ImprovedDocumentMatcher
@@ -19,10 +19,6 @@ class EnhancedChatService:
         
         # Initialize improved document matcher
         self.document_matcher = ImprovedDocumentMatcher(db_manager)
-        
-        # Configure Gemini for general questions
-        genai.configure(api_key=config.GEMINI_API_KEY)
-        self.general_model = genai.GenerativeModel(config.LLM_MODEL)
         
         # Template mappings
         self.template_mappings = {
@@ -180,19 +176,46 @@ class EnhancedChatService:
         # Fallback to original logic with improvements
         question_lower = question.lower()
         question_keywords = self._extract_enhanced_keywords(question)
+        question_normalized = self._normalize_text(question)
+        question_tokens = set(re.findall(r'[a-z0-9əçıöüşğ]+', question_normalized))
         
         # Check if document name is directly mentioned
+        best_name_match = None
+        best_name_score = 0
         for doc in documents:
-            doc_name = doc['original_name'].lower()
-            doc_name_without_ext = doc_name.rsplit('.', 1)[0]
+            doc_name = doc['original_name']
+            doc_name_lower = doc_name.lower()
+            doc_name_without_ext = doc_name_lower.rsplit('.', 1)[0]
             doc_name_clean = re.sub(r'[_-]', ' ', doc_name_without_ext)
-            
-            # Direct name match with fuzzy logic
-            if (doc_name_without_ext in question_lower or 
-                doc_name in question_lower or
+            doc_name_normalized = self._normalize_text(re.sub(r'\.[^.]+$', '', doc_name))
+            doc_tokens = set(re.findall(r'[a-z0-9əçıöüşğ]+', doc_name_normalized))
+
+            score = 0
+
+            # Legacy checks
+            if (doc_name_without_ext in question_lower or
+                doc_name_lower in question_lower or
                 any(part in question_lower for part in doc_name_clean.split() if len(part) > 3)):
-                print(f"✓ Direct name match found: '{doc['original_name']}'")
-                return doc['id']
+                score += 30
+
+            # Strong normalized phrase match
+            if doc_name_normalized and doc_name_normalized in question_normalized:
+                score += 100
+
+            # Token overlaps (e.g., RİİS)
+            for token in question_tokens.intersection(doc_tokens):
+                if len(token) >= 3:
+                    score += 25
+
+            if score > best_name_score:
+                best_name_score = score
+                best_name_match = doc['id']
+
+        if best_name_match and best_name_score >= 25:
+            matched_doc = next((d for d in documents if d['id'] == best_name_match), None)
+            if matched_doc:
+                print(f"✓ Direct name match found: '{matched_doc['original_name']}' (score: {best_name_score})")
+            return best_name_match
         
         # Enhanced keyword matching with scoring
         best_match = None
@@ -214,6 +237,15 @@ class EnhancedChatService:
             print("✗ No suitable document found")
         
         return best_match
+
+    def _normalize_text(self, text: str) -> str:
+        """Normalize text for robust Unicode-insensitive filename matching."""
+        text = (text or '').casefold()
+        text = unicodedata.normalize('NFKD', text)
+        text = ''.join(ch for ch in text if not unicodedata.combining(ch))
+        text = re.sub(r'[_\-\./]+', ' ', text)
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
 
     def _extract_enhanced_keywords(self, question: str) -> List[str]:
         """Extract enhanced keywords from question"""
@@ -391,7 +423,7 @@ class EnhancedChatService:
         return False
     
     def answer_general_question(self, question: str) -> str:
-        """Answer general questions using Gemini without document context"""
+        """Answer general questions using OpenAI without document context"""
         try:
             prompt = f"""
 Sen Azərbaycan dilində cavab verən AI assistentsən.
@@ -406,8 +438,8 @@ Qeydlər:
 - Nəzakətli və peşəkar ol
 
 Cavab:"""
-            
-            response = self.general_model.generate_content(prompt)
+
+            response = self.rag_service.model.generate_content(prompt)
             return response.text
             
         except Exception as e:
