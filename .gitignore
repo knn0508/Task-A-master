@@ -40,7 +40,7 @@ venv.bak/
 .ipynb_checkpoints
 
 # pyenv
-.python-version
+# .python-version  (needed for Vercel Python version pinning)
 
 # pipenv
 Pipfile.lock
