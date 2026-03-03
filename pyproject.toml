@@ -1,7 +1,7 @@
 [project]
 name = "task-a-backend"
 version = "1.0.0"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12"
 dependencies = [
     # Web framework
     "Flask>=3.1",
@@ -77,5 +77,4 @@ override-dependencies = [
     "scipy ; python_version < '0'",
     "scikit-learn ; python_version < '0'",
     "torch ; python_version < '0'",
-    "numpy<2.4",
 ]
