@@ -71,7 +71,6 @@ dependencies = [
 ]
 
 [tool.uv]
-no-binary = ["onnxruntime"]
 override-dependencies = [
     "onnxruntime ; python_version < '0'",
     "pyarrow ; python_version < '0'",
