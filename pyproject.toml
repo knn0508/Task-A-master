@@ -77,4 +77,6 @@ override-dependencies = [
     "scipy ; python_version < '0'",
     "scikit-learn ; python_version < '0'",
     "torch ; python_version < '0'",
+    "pypika>=0.51.1",
+    "PyPika>=0.51.1",
 ]

@@ -17,6 +17,7 @@ resolution-markers = [
 overrides = [
     { name = "onnxruntime", marker = "python_full_version < '0'" },
     { name = "pyarrow", marker = "python_full_version < '0'" },
+    { name = "pypika", specifier = ">=0.51.1" },
     { name = "scikit-learn", marker = "python_full_version < '0'" },
     { name = "scipy", marker = "python_full_version < '0'" },
     { name = "torch", marker = "python_full_version < '0'" },
