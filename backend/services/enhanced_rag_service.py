@@ -11,7 +11,10 @@ from langchain_community.vectorstores import Chroma
 from services.file_processor import FileProcessor
 from services.intelligent_keyword_extractor import IntelligentKeywordExtractor
 from services.improved_document_matching import ImprovedDocumentMatcher
-from langchain_community.embeddings import HuggingFaceEmbeddings
+
+# Lazy import: HuggingFaceEmbeddings requires torch/sentence-transformers
+# Only import when actually needed (i.e. not using OpenAI embeddings)
+HuggingFaceEmbeddings = None
 
 
 class _OpenAIResponseCompat:
@@ -79,11 +82,13 @@ class EnhancedRAGServiceV2:
         self.model = _OpenAIModelCompat(self.openai_client, config.LLM_MODEL)
         
         # Initialize embeddings
-        embedding_model = (config.EMBEDDING_MODEL or "").strip()
+        embedding_model = (config.EMBEDDING_MODEL or "text-embedding-3-small").strip()
         if embedding_model.startswith("text-embedding-"):
             self.embeddings = _OpenAIEmbeddingsCompat(self.openai_client, embedding_model)
         else:
-            self.embeddings = HuggingFaceEmbeddings(
+            # Lazy import to avoid requiring torch on serverless
+            from langchain_community.embeddings import HuggingFaceEmbeddings as _HFEmbed
+            self.embeddings = _HFEmbed(
                 model_name=embedding_model or 'sentence-transformers/all-MiniLM-L6-v2'
             )
         
